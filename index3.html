@@ -1,0 +1,1585 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'unsafe-inline'; style-src 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: blob:; connect-src https://sommelier-proxy.kendrickleesg.workers.dev; object-src 'none'; base-uri 'none';">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'unsafe-inline'; style-src 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: blob:; connect-src https://sommelier-proxy.kendrickleesg.workers.dev; object-src 'none'; base-uri 'none';">
+<title>Sommelier — AI Wine Pairing</title>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;1,300;1,400&family=Jost:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --burgundy: #5C1A1A;
+    --claret: #8B2635;
+    --rose: #C4747A;
+    --blush: #E8C4B8;
+    --cream: #F5EFE6;
+    --parchment: #EDE4D3;
+    --gold: #B8963E;
+    --gold-light: #D4AF6A;
+    --ink: #1A1209;
+    --text: #2D1B0E;
+    --muted: #7A6555;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Jost', sans-serif;
+    background: var(--cream);
+    color: var(--text);
+    min-height: 100vh;
+    overflow-x: hidden;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  /* Decorative background */
+  body::before {
+    content: '';
+    position: fixed;
+    top: 0; right: 0; bottom: 0; left: 0;
+    background:
+      radial-gradient(ellipse 80% 60% at 10% 20%, rgba(92,26,26,0.06) 0%, transparent 60%),
+      radial-gradient(ellipse 60% 80% at 90% 80%, rgba(139,38,53,0.05) 0%, transparent 60%),
+      url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%235C1A1A' fill-opacity='0.03'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .container {
+    max-width: 820px;
+    margin: 0 auto;
+    padding: 0 24px 80px;
+    position: relative;
+    z-index: 1;
+  }
+
+  /* Header */
+  header {
+    text-align: center;
+    padding: 56px 0 40px;
+    position: relative;
+  }
+
+  .header-rule {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    margin-bottom: 24px;
+  }
+  .header-rule::before, .header-rule::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: linear-gradient(to right, transparent, var(--gold), transparent);
+  }
+
+  .logo-icon {
+    font-size: 28px;
+    line-height: 1;
+  }
+
+  h1 {
+    font-family: 'Cormorant Garamond', serif;
+    font-weight: 300;
+    font-size: clamp(2.4rem, 6vw, 3.6rem);
+    letter-spacing: 0.12em;
+    color: var(--burgundy);
+    text-transform: uppercase;
+    line-height: 1.1;
+  }
+
+  .subtitle {
+    font-size: 0.78rem;
+    letter-spacing: 0.3em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-top: 10px;
+    font-weight: 300;
+  }
+
+  /* Section cards */
+  .section {
+    background: rgba(255,255,255,0.7);
+    border: 1px solid rgba(184,150,62,0.25);
+    border-radius: 2px;
+    padding: 32px 36px;
+    margin-bottom: 20px;
+    -webkit-backdrop-filter: blur(8px);
+    backdrop-filter: blur(8px);
+    position: relative;
+  }
+
+  .section::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0;
+    width: 3px; height: 100%;
+    background: linear-gradient(to bottom, var(--gold), var(--claret));
+    border-radius: 2px 0 0 2px;
+  }
+
+  .section-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 24px;
+  }
+
+  .section-num {
+    width: 28px; height: 28px;
+    border-radius: 50%;
+    background: var(--burgundy);
+    color: var(--cream);
+    font-size: 0.7rem;
+    font-weight: 500;
+    letter-spacing: 0.05em;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+  }
+
+  .section-title {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 1.3rem;
+    font-weight: 400;
+    color: var(--burgundy);
+    letter-spacing: 0.04em;
+  }
+
+  /* Dish inputs */
+  .dishes-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+  }
+
+  @media (max-width: 540px) { .dishes-grid { grid-template-columns: 1fr; } }
+
+  .dish-input-wrap {
+    position: relative;
+  }
+
+  .dish-num {
+    position: absolute;
+    left: 12px; top: 50%;
+    -webkit-transform: translateY(-50%);
+    transform: translateY(-50%);
+    font-size: 0.65rem;
+    color: var(--gold);
+    font-weight: 500;
+    letter-spacing: 0.1em;
+    pointer-events: none;
+    -webkit-user-select: none;
+    user-select: none;
+  }
+
+  input[type="text"], textarea {
+    width: 100%;
+    background: rgba(237,228,211,0.4);
+    border: 1px solid rgba(184,150,62,0.3);
+    border-radius: 2px;
+    padding: 10px 12px 10px 32px;
+    font-family: 'Jost', sans-serif;
+    font-size: 0.85rem;
+    color: var(--text);
+    outline: none;
+    transition: all 0.2s;
+  }
+
+  input[type="text"]:focus, textarea:focus {
+    border-color: var(--gold);
+    background: rgba(237,228,211,0.7);
+    box-shadow: 0 0 0 3px rgba(184,150,62,0.1);
+  }
+
+  input[type="text"]::placeholder { color: var(--muted); opacity: 0.6; }
+
+  /* Wine source tabs */
+  .tabs {
+    display: flex;
+    gap: 0;
+    margin-bottom: 24px;
+    border-bottom: 1px solid rgba(184,150,62,0.3);
+  }
+
+  .tab {
+    padding: 10px 20px;
+    font-size: 0.75rem;
+    font-weight: 500;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--muted);
+    cursor: pointer;
+    border: none;
+    background: none;
+    border-bottom: 2px solid transparent;
+    margin-bottom: -1px;
+    transition: all 0.2s;
+    font-family: 'Jost', sans-serif;
+  }
+
+  .tab:hover { color: var(--burgundy); }
+  .tab.active {
+    color: var(--burgundy);
+    border-bottom-color: var(--gold);
+    font-weight: 500;
+  }
+
+  .tab-panel { display: none; }
+  .tab-panel.active { display: block; }
+
+  /* Upload zone */
+  .upload-zone {
+    border: 1.5px dashed rgba(184,150,62,0.4);
+    border-radius: 4px;
+    padding: 36px 24px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.2s;
+    position: relative;
+    background: rgba(237,228,211,0.2);
+  }
+
+  .upload-zone:hover, .upload-zone.drag-over {
+    border-color: var(--gold);
+    background: rgba(184,150,62,0.06);
+  }
+
+  .upload-zone input[type="file"] {
+    position: absolute;
+    top: 0; right: 0; bottom: 0; left: 0;
+    opacity: 0;
+    cursor: pointer;
+    width: 100%;
+    height: 100%;
+  }
+
+  .upload-icon { font-size: 2rem; margin-bottom: 10px; }
+  .upload-text { font-size: 0.85rem; color: var(--muted); line-height: 1.6; }
+  .upload-text strong { color: var(--burgundy); font-weight: 500; }
+
+  .file-list {
+    margin-top: 14px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .file-chip {
+    background: rgba(92,26,26,0.08);
+    border: 1px solid rgba(92,26,26,0.2);
+    border-radius: 20px;
+    padding: 4px 12px;
+    font-size: 0.75rem;
+    color: var(--burgundy);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .file-chip button {
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: var(--rose);
+    font-size: 1rem;
+    line-height: 1;
+    padding: 0;
+    display: flex;
+  }
+
+  /* Wine text inputs */
+  .wine-inputs { display: flex; flex-direction: column; gap: 8px; }
+
+  /* CTA Button */
+  .cta-wrap { text-align: center; margin-top: 32px; }
+
+  .btn-pair {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    background: linear-gradient(135deg, var(--burgundy), var(--claret));
+    color: var(--cream);
+    border: none;
+    padding: 16px 48px;
+    font-family: 'Jost', sans-serif;
+    font-size: 0.8rem;
+    font-weight: 500;
+    letter-spacing: 0.25em;
+    text-transform: uppercase;
+    cursor: pointer;
+    border-radius: 2px;
+    transition: all 0.3s;
+    position: relative;
+    overflow: hidden;
+    box-shadow: 0 4px 20px rgba(92,26,26,0.25);
+  }
+
+  .btn-pair::before {
+    content: '';
+    position: absolute;
+    top: 0; right: 0; bottom: 0; left: 0;
+    background: linear-gradient(135deg, var(--claret), var(--burgundy));
+    opacity: 0;
+    transition: opacity 0.3s;
+  }
+
+  .btn-pair:hover::before { opacity: 1; }
+  .btn-pair:hover { box-shadow: 0 6px 28px rgba(92,26,26,0.35); -webkit-transform: translateY(-1px); transform: translateY(-1px); }
+  .btn-pair:active { -webkit-transform: translateY(0); transform: translateY(0); }
+  .btn-pair span { position: relative; }
+  .btn-pair:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
+
+  /* Loading */
+  .loading {
+    display: none;
+    text-align: center;
+    padding: 48px 24px;
+  }
+
+  .loading.visible { display: block; }
+
+  .loading-glass {
+    font-size: 3rem;
+    -webkit-animation: swirl 2s ease-in-out infinite;
+    animation: swirl 2s ease-in-out infinite;
+    display: inline-block;
+  }
+
+  @-webkit-keyframes swirl {
+    0%, 100% { -webkit-transform: rotate(-8deg); transform: rotate(-8deg); }
+    50% { -webkit-transform: rotate(8deg); transform: rotate(8deg); }
+  }
+  @keyframes swirl {
+    0%, 100% { -webkit-transform: rotate(-8deg); transform: rotate(-8deg); }
+    50% { -webkit-transform: rotate(8deg); transform: rotate(8deg); }
+  }
+
+  .loading-text {
+    margin-top: 16px;
+    font-family: 'Cormorant Garamond', serif;
+    font-style: italic;
+    font-size: 1.15rem;
+    color: var(--muted);
+  }
+
+  /* Results */
+  .results {
+    display: none;
+  }
+  .results.visible { display: block; }
+
+  .results-header {
+    text-align: center;
+    margin-bottom: 32px;
+    padding-bottom: 24px;
+    border-bottom: 1px solid rgba(184,150,62,0.25);
+  }
+
+  .results-title {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 1.8rem;
+    font-weight: 300;
+    color: var(--burgundy);
+    letter-spacing: 0.06em;
+  }
+
+  .results-subtitle {
+    font-size: 0.75rem;
+    color: var(--muted);
+    margin-top: 6px;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+  }
+
+  .result-content {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 1.05rem;
+    line-height: 1.9;
+    color: var(--text);
+    white-space: pre-wrap;
+  }
+
+  /* Wine cards rendered from markdown-like output */
+  .wine-card {
+    background: linear-gradient(135deg, rgba(255,255,255,0.9), rgba(237,228,211,0.5));
+    border: 1px solid rgba(184,150,62,0.3);
+    border-radius: 4px;
+    padding: 20px 24px;
+    margin-bottom: 14px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .wine-card::after {
+    content: '🍷';
+    position: absolute;
+    right: 16px; top: 50%;
+    -webkit-transform: translateY(-50%);
+    transform: translateY(-50%);
+    font-size: 1.8rem;
+    opacity: 0.10;
+  }
+
+  /* Rank label — e.g. "Best pick" */
+  .wine-rank {
+    font-size: 0.65rem;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--gold);
+    font-family: 'Jost', sans-serif;
+    font-weight: 500;
+    margin-bottom: 4px;
+  }
+
+  /* Vintage + Producer + Wine name on one line */
+  .wine-name {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 1.2rem;
+    font-weight: 500;
+    color: var(--burgundy);
+    margin: 2px 0 6px;
+    line-height: 1.3;
+  }
+
+  /* Appellation · Varietal · Scores */
+  .wine-meta {
+    font-size: 0.78rem;
+    color: var(--muted);
+    font-family: 'Jost', sans-serif;
+    font-weight: 400;
+    letter-spacing: 0.02em;
+    margin-bottom: 4px;
+  }
+
+  /* Bottles + drinking window row */
+  .wine-inventory {
+    font-size: 0.78rem;
+    color: var(--muted);
+    font-family: 'Jost', sans-serif;
+    margin-bottom: 10px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+
+  .wine-inventory .inv-bottles {
+    font-weight: 500;
+    color: var(--burgundy);
+  }
+
+  .wine-inventory .inv-window {
+    color: var(--muted);
+  }
+
+  .wine-inventory .inv-sep {
+    color: rgba(184,150,62,0.5);
+    font-weight: 300;
+  }
+
+  /* Price for restaurant mode */
+  .wine-price {
+    display: inline-block;
+    font-size: 0.78rem;
+    font-family: 'Jost', sans-serif;
+    font-weight: 500;
+    color: var(--gold);
+    margin-bottom: 10px;
+  }
+
+  /* Pairing note — italic, below a hairline rule */
+  .wine-pairing-note {
+    margin-top: 10px;
+    padding-top: 10px;
+    border-top: 1px solid rgba(184,150,62,0.2);
+    font-family: 'Cormorant Garamond', serif;
+    font-style: italic;
+    font-size: 0.97rem;
+    color: var(--text);
+    line-height: 1.65;
+  }
+
+  .badge {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 20px;
+    font-size: 0.68rem;
+    font-weight: 500;
+    letter-spacing: 0.08em;
+    font-family: 'Jost', sans-serif;
+    margin-top: 6px;
+    margin-right: 4px;
+  }
+
+  .badge-price { background: rgba(184,150,62,0.15); color: var(--gold); border: 1px solid rgba(184,150,62,0.3); }
+  .badge-urgent { background: rgba(139,38,53,0.12); color: var(--claret); border: 1px solid rgba(139,38,53,0.3); }
+  .badge-stock { background: rgba(92,26,26,0.08); color: var(--burgundy); border: 1px solid rgba(92,26,26,0.2); }
+
+  /* Considerations box */
+  .considerations-box {
+    background: rgba(237,228,211,0.45);
+    border: 1px solid rgba(184,150,62,0.2);
+    border-radius: 3px;
+    padding: 14px 18px;
+    margin-bottom: 18px;
+  }
+
+  .considerations-label {
+    font-family: 'Jost', sans-serif;
+    font-size: 0.62rem;
+    font-weight: 500;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    color: var(--gold);
+    margin-bottom: 10px;
+  }
+
+  .considerations-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px 0;
+    align-items: center;
+  }
+
+  .consideration-step {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+  }
+
+  .consideration-num {
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    background: var(--burgundy);
+    color: var(--cream);
+    font-size: 0.6rem;
+    font-family: 'Jost', sans-serif;
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+
+  .consideration-text {
+    font-family: 'Jost', sans-serif;
+    font-size: 0.78rem;
+    color: var(--text);
+    font-weight: 400;
+  }
+
+  .consideration-arrow {
+    color: rgba(184,150,62,0.5);
+    font-size: 0.7rem;
+    margin: 0 8px;
+  }
+
+  /* Wine type filter bar */
+  .wine-filters {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+  }
+
+  .filter-btn {
+    padding: 6px 18px;
+    font-family: 'Jost', sans-serif;
+    font-size: 0.72rem;
+    font-weight: 500;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    border: 1px solid rgba(184,150,62,0.35);
+    border-radius: 20px;
+    background: transparent;
+    color: var(--muted);
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .filter-btn:hover {
+    border-color: var(--gold);
+    color: var(--burgundy);
+  }
+
+  .filter-btn.active {
+    background: var(--burgundy);
+    border-color: var(--burgundy);
+    color: var(--cream);
+  }
+
+  .wine-card.hidden {
+    display: none;
+  }
+
+  .no-filter-match {
+    text-align: center;
+    padding: 32px 0;
+    font-family: 'Cormorant Garamond', serif;
+    font-style: italic;
+    font-size: 1.05rem;
+    color: var(--muted);
+  }
+
+  .reset-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: none;
+    border: 1px solid rgba(184,150,62,0.4);
+    color: var(--muted);
+    padding: 10px 24px;
+    font-family: 'Jost', sans-serif;
+    font-size: 0.75rem;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    cursor: pointer;
+    border-radius: 2px;
+    transition: all 0.2s;
+    margin-top: 24px;
+  }
+  .reset-btn:hover { border-color: var(--gold); color: var(--burgundy); }
+
+  .error-msg {
+    background: rgba(139,38,53,0.08);
+    border: 1px solid rgba(139,38,53,0.2);
+    border-radius: 4px;
+    padding: 16px 20px;
+    color: var(--claret);
+    font-size: 0.85rem;
+    margin-top: 16px;
+    display: none;
+  }
+  .error-msg.visible { display: block; }
+
+  .clear-menu-btn {
+    background: none;
+    border: 1px solid rgba(184,150,62,0.3);
+    border-radius: 2px;
+    color: var(--muted);
+    font-family: 'Jost', sans-serif;
+    font-size: 0.68rem;
+    font-weight: 500;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    padding: 4px 12px;
+    cursor: pointer;
+    transition: all 0.2s;
+    flex-shrink: 0;
+  }
+
+  .clear-menu-btn:hover {
+    border-color: var(--claret);
+    color: var(--claret);
+  }
+
+  .helper-text {
+    font-size: 0.75rem;
+    color: var(--muted);
+    margin-top: 8px;
+    font-style: italic;
+    line-height: 1.5;
+  }
+
+  .casual-label {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-top: 14px;
+    cursor: pointer;
+    -webkit-user-select: none;
+    user-select: none;
+  }
+
+  .casual-label input[type="checkbox"] {
+    position: absolute;
+    opacity: 0;
+    width: 0;
+    height: 0;
+  }
+
+  .casual-box {
+    width: 16px;
+    height: 16px;
+    border: 1px solid rgba(184,150,62,0.45);
+    border-radius: 2px;
+    background: rgba(237,228,211,0.4);
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.15s;
+  }
+
+  .casual-label input:checked + .casual-box {
+    background: var(--burgundy);
+    border-color: var(--burgundy);
+  }
+
+  .casual-label input:checked + .casual-box::after {
+    content: '';
+    display: block;
+    width: 4px;
+    height: 7px;
+    border: 1.5px solid var(--cream);
+    border-top: none;
+    border-left: none;
+    -webkit-transform: rotate(45deg) translateY(-1px);
+    transform: rotate(45deg) translateY(-1px);
+  }
+
+  .casual-text {
+    font-family: 'Jost', sans-serif;
+    font-size: 0.8rem;
+    color: var(--text);
+    font-weight: 400;
+  }
+</style>
+</head>
+<body>
+<div class="container">
+
+  <header>
+    <div class="header-rule">
+      <div class="logo-icon">🍷</div>
+    </div>
+    <h1>Sommelier</h1>
+    <p class="subtitle">AI Wine Pairing &nbsp;·&nbsp; Curated for your table</p>
+  </header>
+
+  <div id="main-form">
+
+    <!-- Section 1: Menu -->
+    <div class="section">
+      <div class="section-header" style="justify-content:space-between;">
+        <div style="display:flex;align-items:center;gap:12px;">
+          <div class="section-num">I</div>
+          <div class="section-title">The Menu</div>
+        </div>
+        <button class="clear-menu-btn" id="clear-menu-btn" title="Clear all dishes">Clear</button>
+      </div>
+      <div class="dishes-grid" id="dishes-grid">
+        <!-- Rendered by JS -->
+      </div>
+      <p class="helper-text">Enter up to 10 dishes. Leave extras blank.</p>
+    </div>
+
+    <!-- Section 2: Wine Source -->
+    <div class="section">
+      <div class="section-header">
+        <div class="section-num">II</div>
+        <div class="section-title">Your Wine List</div>
+      </div>
+
+      <div class="tabs">
+        <button class="tab active" data-tab="restaurant">Restaurant List</button>
+        <button class="tab" data-tab="cellar">CellarTracker (PDF)</button>
+        <button class="tab" data-tab="manual">Enter Wines</button>
+      </div>
+
+      <!-- Tab: Restaurant -->
+      <div class="tab-panel active" id="tab-restaurant">
+        <div class="upload-zone" id="restaurant-zone">
+          <input type="file" id="restaurant-files" accept="image/*" multiple>
+          <div class="upload-icon">📷</div>
+          <div class="upload-text">
+            <strong>Upload photos of the wine list</strong><br>
+            Drag & drop or click to browse · JPG, PNG, WEBP · 30 MB total
+          </div>
+        </div>
+        <div class="file-list" id="restaurant-file-list"></div>
+        <p class="helper-text">Multiple photos welcome — e.g. different pages or sections of the list. Up to 30 MB total across all photos.</p>
+      </div>
+
+      <!-- Tab: Cellar PDF -->
+      <div class="tab-panel" id="tab-cellar">
+        <div class="upload-zone" id="cellar-zone">
+          <input type="file" id="cellar-file" accept=".pdf,application/pdf">
+          <div class="upload-icon">📄</div>
+          <div class="upload-text">
+            <strong>Upload your CellarTracker inventory PDF</strong><br>
+            Drag & drop or click to browse · PDF only
+          </div>
+        </div>
+        <div class="file-list" id="cellar-file-list"></div>
+        <p class="helper-text">Export your inventory from CellarTracker as a PDF. Bottle counts appear after "=" (e.g. Château Margaux 2015 = 3).</p>
+        <label class="casual-label">
+          <input type="checkbox" id="casual-meal-check">
+          <span class="casual-box"></span>
+          <span class="casual-text">Casual meal — include practical choice as a consideration</span>
+        </label>
+      </div>
+
+      <!-- Tab: Manual -->
+      <div class="tab-panel" id="tab-manual">
+        <div class="wine-inputs" id="wine-inputs">
+          <!-- Rendered by JS -->
+        </div>
+        <p class="helper-text">Enter up to 5 wines. Include vintage, producer and region for best results.</p>
+      </div>
+
+    </div>
+
+    <div class="error-msg" id="error-msg"></div>
+    <div class="cta-wrap">
+      <button class="btn-pair" id="pair-btn">
+        <span>✦</span>
+        <span>Find My Pairing</span>
+        <span>✦</span>
+      </button>
+    </div>
+
+  </div>
+
+  <!-- Loading -->
+  <div class="loading" id="loading">
+    <div class="loading-glass">🍷</div>
+    <div class="loading-text" id="loading-text">Consulting the cellar…</div>
+  </div>
+
+  <!-- Results -->
+  <div class="results" id="results">
+    <div class="section">
+      <div class="results-header">
+        <div class="results-title">Your Pairing Recommendations</div>
+        <div class="results-subtitle" id="results-mode-label"></div>
+      </div>
+      <div class="considerations-box" id="considerations-box" style="display:none"></div>
+      <div class="wine-filters" id="wine-filters">
+        <button class="filter-btn active" data-filter="all">All</button>
+        <button class="filter-btn" data-filter="red">Red</button>
+        <button class="filter-btn" data-filter="white">White</button>
+        <button class="filter-btn" data-filter="sweet">Sweet</button>
+      </div>
+      <div id="results-body"></div>
+    </div>
+    <div style="text-align:center">
+      <button class="reset-btn" id="reset-btn">← Start a New Pairing</button>
+
+    </div>
+  </div>
+
+</div>
+
+<script>
+// ─── Safari: canvas.toBlob polyfill ──────────────────────────
+if (!HTMLCanvasElement.prototype.toBlob) {
+  Object.defineProperty(HTMLCanvasElement.prototype, 'toBlob', {
+    value: function(callback, type, quality) {
+      const dataURL = this.toDataURL(type || 'image/jpeg', quality);
+      const parts   = dataURL.split(',');
+      const mime    = parts[0].match(/:(.*?);/)[1];
+      const bytes   = atob(parts[1]);
+      const buf     = new Uint8Array(bytes.length);
+      for (let i = 0; i < bytes.length; i++) buf[i] = bytes.charCodeAt(i);
+      callback(new Blob([buf], { type: mime }));
+    }
+  });
+}
+
+// ─── Cached DOM refs (looked up once at startup) ──────────────
+const $ = id => document.getElementById(id);
+const DOM = {};
+document.addEventListener('DOMContentLoaded', () => {
+  DOM.mainForm       = $('main-form');
+  DOM.loading        = $('loading');
+  DOM.loadingText    = $('loading-text');
+  DOM.results        = $('results');
+  DOM.resultsBody    = $('results-body');
+  DOM.modeLabel      = $('results-mode-label');
+  DOM.considerBox    = $('considerations-box');
+  DOM.errorMsg       = $('error-msg');
+  DOM.filterBtns     = document.querySelectorAll('.filter-btn');
+  DOM.tabs           = document.querySelectorAll('.tab');
+  DOM.tabPanels      = document.querySelectorAll('.tab-panel');
+});
+
+// ─── Hoisted constants ────────────────────────────
+const RANK_LABELS = ['Best pick','2nd pick','3rd pick','4th pick','5th pick','6th pick','7th pick'];
+const CLEAN_RE    = /^(?:not specified|unknown|n\/a)$/i;
+const clean       = v => (!v || CLEAN_RE.test(v.trim())) ? '' : v.trim();
+
+// ─── Security: HTML escape (OWASP A03) ─────────────────
+const ESC_MAP = {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;','`':'&#96;'};
+const esc = s => String(s == null ? '' : s).replace(/[&<>"'`]/g, c => ESC_MAP[c]);
+
+// ─── Security: Prompt sanitiser (OWASP A03) ──────────────
+const MAX_DISH_LEN = 120;
+const sanitisePromptInput = s => String(s == null ? '' : s)
+  .slice(0, MAX_DISH_LEN)
+  .replace(/[\x00-\x1f\x7f]/g, ' ')
+  .replace(/`/g, "'")
+  .trim();
+
+
+// ─── State ───────────────────────────────────────────────────
+const MENU_STORAGE_KEY = 'sommelier_last_menu';
+
+function loadSavedDishes() {
+  try {
+    const saved = localStorage.getItem(MENU_STORAGE_KEY);
+    if (!saved) return Array(10).fill('');
+    const parsed = JSON.parse(saved);
+    // Validate: must be array of 10 strings (OWASP A04 — integrity check)
+    if (!Array.isArray(parsed) || parsed.length !== 10) return Array(10).fill('');
+    return parsed.map(v => (typeof v === 'string' ? v : '').slice(0, 120));
+  } catch (e) {}
+  return Array(10).fill('');
+}
+
+function saveDishes(dishes) {
+  try { localStorage.setItem(MENU_STORAGE_KEY, JSON.stringify(dishes)); } catch (e) {}
+}
+
+const state = {
+  activeTab: 'restaurant',
+  restaurantFiles: [],
+  cellarFile: null,
+  manualWines: Array(5).fill(''),
+  dishes: loadSavedDishes(),
+};
+
+// ─── Render dishes ────────────────────────────────────────────
+function renderDishes() {
+  const grid = document.getElementById('dishes-grid');
+  grid.innerHTML = '';
+  for (let i = 0; i < 10; i++) {
+    const wrap = document.createElement('div');
+    wrap.className = 'dish-input-wrap';
+    wrap.innerHTML = `
+      <span class="dish-num">${String(i+1).padStart(2,'0')}</span>
+      <input type="text" placeholder="Dish ${i+1}…" data-dish="${i}">
+    `;
+    const dishInput = wrap.querySelector('input');
+    dishInput.value = state.dishes[i];   // safe: .value not innerHTML
+    dishInput.addEventListener('input', e => {
+      state.dishes[i] = e.target.value;
+      saveDishes(state.dishes);
+    });
+    grid.appendChild(wrap);
+  }
+}
+
+// ─── Clear menu ───────────────────────────────────────────────
+document.getElementById('clear-menu-btn').addEventListener('click', () => {
+  state.dishes = Array(10).fill('');
+  saveDishes(state.dishes);
+  renderDishes();
+});
+
+// ─── Render wine inputs ────────────────────────────────────────
+function renderWineInputs() {
+  const container = document.getElementById('wine-inputs');
+  container.innerHTML = '';
+  for (let i = 0; i < 5; i++) {
+    const wrap = document.createElement('div');
+    wrap.className = 'dish-input-wrap';
+    wrap.innerHTML = `
+      <span class="dish-num">${String(i+1).padStart(2,'0')}</span>
+      <input type="text" placeholder="e.g. Château Pichon Baron 2016, Pauillac…" data-wine="${i}">
+    `;
+    const wineInput = wrap.querySelector('input');
+    wineInput.value = state.manualWines[i];   // safe: .value not innerHTML
+    wineInput.addEventListener('input', e => {
+      state.manualWines[i] = e.target.value;
+    });
+    container.appendChild(wrap);
+  }
+}
+
+// ─── Tabs ─────────────────────────────────────────────────────
+document.querySelectorAll('.tab').forEach(tab => {
+  tab.addEventListener('click', () => {
+    state.activeTab = tab.dataset.tab;
+    (DOM.tabs || document.querySelectorAll('.tab')).forEach(t => t.classList.remove('active'));
+    (DOM.tabPanels || document.querySelectorAll('.tab-panel')).forEach(p => p.classList.remove('active'));
+    tab.classList.add('active');
+    document.getElementById(`tab-${state.activeTab}`).classList.add('active');
+  });
+});
+
+// ─── File handling: Restaurant ────────────────────────────────
+const MAX_TOTAL_BYTES = 30 * 1024 * 1024; // 30 MB total
+
+function formatBytes(bytes) {
+  if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(0) + ' KB';
+  return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
+}
+
+function totalRestaurantSize() {
+  return state.restaurantFiles.reduce((sum, f) => sum + f.size, 0);
+}
+
+function renderFileChips(listId, files, removeCallback) {
+  const list = document.getElementById(listId);
+  list.innerHTML = '';
+  files.forEach((f, i) => {
+    const chip = document.createElement('div');
+    chip.className = 'file-chip';
+    chip.innerHTML = `📷 ${esc(f.name)} <span style="opacity:0.6;margin-left:2px">(${formatBytes(f.size)})</span> <button title="Remove">×</button>`;
+    chip.querySelector('button').addEventListener('click', () => removeCallback(i));
+    list.appendChild(chip);
+  });
+  if (files.length > 0) {
+    const total = document.createElement('div');
+    total.style.cssText = 'width:100%;font-size:0.72rem;color:var(--muted);margin-top:4px;font-style:italic;';
+    const used = totalRestaurantSize();
+    const pct = Math.round((used / MAX_TOTAL_BYTES) * 100);
+    total.textContent = `${files.length} photo${files.length > 1 ? 's' : ''} · ${formatBytes(used)} of 30 MB used (${pct}%)`;
+    list.appendChild(total);
+  }
+}
+
+document.getElementById('restaurant-files').addEventListener('change', e => {
+  const incoming = Array.from(e.target.files);
+  const combined = [...state.restaurantFiles, ...incoming];
+  const newTotal = combined.reduce((sum, f) => sum + f.size, 0);
+
+  if (newTotal > MAX_TOTAL_BYTES) {
+    const remaining = MAX_TOTAL_BYTES - totalRestaurantSize();
+    showError(`Total upload limit is 30 MB. You have ${formatBytes(remaining)} remaining — please use smaller or fewer photos.`);
+    e.target.value = '';
+    return;
+  }
+
+  state.restaurantFiles = combined;
+  refreshRestaurantChips();
+  e.target.value = '';
+});
+
+function refreshRestaurantChips() {
+  renderFileChips('restaurant-file-list', state.restaurantFiles, i => {
+    state.restaurantFiles.splice(i, 1);
+    refreshRestaurantChips();
+  });
+}
+
+document.getElementById('cellar-file').addEventListener('change', e => {
+  state.cellarFile = e.target.files[0] || null;
+  const list = document.getElementById('cellar-file-list');
+  list.innerHTML = '';
+  if (state.cellarFile) {
+    const chip = document.createElement('div');
+    chip.className = 'file-chip';
+    chip.innerHTML = `📄 ${esc(state.cellarFile.name)} <button title="Remove">×</button>`;
+    chip.querySelector('button').addEventListener('click', () => {
+      state.cellarFile = null;
+      list.innerHTML = '';
+      document.getElementById('cellar-file').value = '';
+    });
+    list.appendChild(chip);
+  }
+});
+
+// ─── Drag over ────────────────────────────────────────────────
+['restaurant-zone','cellar-zone'].forEach(id => {
+  const zone = document.getElementById(id);
+  zone.addEventListener('dragover', e => { e.preventDefault(); zone.classList.add('drag-over'); });
+  zone.addEventListener('dragleave', () => zone.classList.remove('drag-over'));
+  zone.addEventListener('drop', () => zone.classList.remove('drag-over'));
+});
+
+// ─── Helpers ──────────────────────────────────────────────────
+function toBase64(file) {
+  return new Promise((res, rej) => {
+    const r = new FileReader();
+    r.onload = () => res(r.result.split(',')[1]);
+    r.onerror = () => rej(new Error('Read failed'));
+    r.readAsDataURL(file);
+  });
+}
+
+// Compress an image File to stay under the API's 5 MB per-image limit.
+// Uses a canvas to re-encode as JPEG, scaling down if needed.
+const MAX_IMAGE_BYTES = 4.5 * 1024 * 1024; // 4.5 MB — safe margin under 5 MB API limit
+
+function compressImage(file) {
+  return new Promise((resolve) => {
+    const ext = file.name.split('.').pop().toLowerCase();
+    const imageExts = ['jpg', 'jpeg', 'png', 'webp', 'avif'];
+    const isImage = file.type.startsWith('image/') || imageExts.includes(ext);
+
+    // Non-images (PDF, HEIC pass-through) go straight to the API
+    if (!isImage) { resolve(file); return; }
+
+    // Already within limit — no compression needed
+    if (file.size <= MAX_IMAGE_BYTES) { resolve(file); return; }
+
+    // Use FileReader to load the image as a data URL — works in all sandbox contexts
+    // unlike createObjectURL which can be blocked in iframes
+    const reader = new FileReader();
+    reader.onerror = () => resolve(file); // on any read failure, pass through as-is
+
+    reader.onload = (e) => {
+      const dataUrl = e.target.result;
+      const img = new Image();
+
+      img.onerror = () => resolve(file); // if image decode fails, pass through as-is
+
+      img.onload = () => {
+        try {
+          const canvas = document.createElement('canvas');
+          let { width, height } = img;
+
+          // Calculate scale directly — no iteration needed
+          const JPEG_RATIO = 0.18;
+          const maxPixels = MAX_IMAGE_BYTES / (3 * JPEG_RATIO);
+          const scale = (width * height > maxPixels)
+            ? Math.max(0.05, Math.sqrt(maxPixels / (width * height)))
+            : 1;
+
+          canvas.width  = Math.round(width  * scale);
+          canvas.height = Math.round(height * scale);
+          canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
+
+          // Iteratively reduce quality until blob fits
+          function tryQuality(q) {
+            canvas.toBlob(blob => {
+              if (!blob) { resolve(file); return; } // fallback on blob failure
+              if (blob.size <= MAX_IMAGE_BYTES || q <= 0.3) {
+                // Safari: new File() from Blob can fail in older versions — attach name via property
+                let outFile;
+                try {
+                  outFile = new File([blob], file.name.replace(/\.[^.]+$/, '.jpg'), { type: 'image/jpeg' });
+                } catch (_) {
+                  outFile = blob;
+                  outFile.name = file.name.replace(/\.[^.]+$/, '.jpg');
+                }
+                resolve(outFile);
+              } else {
+                tryQuality(Math.max(q - 0.1, 0.3));
+              }
+            }, 'image/jpeg', q);
+          }
+          tryQuality(0.85);
+
+        } catch (_) {
+          resolve(file); // canvas not available — pass through
+        }
+      };
+
+      img.src = dataUrl;
+    };
+
+    reader.readAsDataURL(file);
+  });
+}
+
+function getMediaType(file) {
+  if (file.type) return file.type;
+  const ext = file.name.split('.').pop().toLowerCase();
+  const map = {
+    jpg: 'image/jpeg', jpeg: 'image/jpeg',
+    png: 'image/png', webp: 'image/webp',
+    heic: 'image/jpeg', heif: 'image/jpeg', // treat as JPEG for API
+    pdf: 'application/pdf'
+  };
+  return map[ext] || 'application/octet-stream';
+}
+
+function showError(msg) {
+  const el = DOM.errorMsg || document.getElementById('error-msg');
+  el.textContent = msg;
+  el.classList.add('visible');
+  setTimeout(() => el.classList.remove('visible'), 6000);
+}
+
+// ─── Render results ────────────────────────────────────────────
+function renderResults(text, mode) {
+  const body = DOM.resultsBody || document.getElementById('results-body');
+  const modeLabels = {
+    restaurant: 'Restaurant Wine List · Best Value Pairings',
+    cellar: 'CellarTracker Inventory · Recommended Bottles',
+    manual: 'Your Wines · Ranked by Pairing',
+  };
+  (DOM.modeLabel || document.getElementById('results-mode-label')).textContent = modeLabels[mode] || '';
+
+  // Render considerations box — populated after JSON parse below
+  const considerationsBox = DOM.considerBox || document.getElementById('considerations-box');
+  considerationsBox.style.display = 'none';
+  considerationsBox.innerHTML = '';
+
+  // Parse JSON response from Claude.
+  // Handles both {"wines":[...]} object form and bare [...] array form.
+  // Also normalises field name variants the model sometimes returns.
+  let wines = [];
+  try {
+    // Strip markdown fences anywhere in the string
+    const stripped = text.replace(/```json\s*/gi, '').replace(/```\s*/gi, '').trim();
+
+    // Find outermost JSON structure — prefer object, fall back to array
+    let parsed;
+    const objStart = stripped.indexOf('{');
+    const arrStart = stripped.indexOf('[');
+
+    if (objStart !== -1 && (arrStart === -1 || objStart < arrStart)) {
+      // Object form: {"wines": [...]}
+      const end = stripped.lastIndexOf('}');
+      parsed = JSON.parse(stripped.slice(objStart, end + 1));
+      wines = parsed.wines || parsed.top_3_wine_pairings || parsed.top_3 || parsed.wine_pairings || parsed.pairings || parsed.recommendations || parsed.results || Object.values(parsed).find(v => Array.isArray(v)) || [];
+      // If object has no array key, maybe the object itself is one wine
+      if (!wines.length && parsed.wine_name) wines = [parsed];
+    } else if (arrStart !== -1) {
+      // Array form: [{...}, {...}]
+      const end = stripped.lastIndexOf(']');
+      wines = JSON.parse(stripped.slice(arrStart, end + 1));
+    } else {
+      throw new Error('No JSON found');
+    }
+
+    // Normalise field names — the model sometimes uses different keys
+    wines = wines.map((w, i) => {
+      // Infer wine_type from model field or from varietal/name keywords
+      const rawType = (w.wine_type || w.type || w.color || '').toLowerCase();
+      const haystack = (rawType + ' ' + (w.varietal||'') + ' ' + (w.wine_name||'')).toLowerCase();
+      let wine_type = 'red'; // default
+
+      // Check unambiguous reds FIRST — prevents "sauvignon" in "Cabernet Sauvignon"
+      // from triggering the white regex below
+      const isUnambiguousRed = /cabernet|cab.sav|merlot|syrah|shiraz|pinot.noir|nebbiolo|sangiovese|tempranillo|grenache|mourvedre|malbec|zinfandel|barbera|dolcetto|montepulciano|primitivo|aglianico|nerello|frappato|gamay|pinotage|carmenere|corvina|lagrein|teroldego|refosco|sagrantino|cannonau|gaglioppo/.test(haystack);
+
+      if (isUnambiguousRed) {
+        wine_type = 'red';
+      } else if (/white|blanc|bianco|weiss|riesling|chardonnay|sauvignon.blanc|pinot.gris|pinot.grigio|gruner|viognier|albarino|vermentino|verdicchio|soave|gavi|trebbiano|fiano|greco|falanghina|arneis|cortese|ribolla|pecorino|garganega|inzolia/.test(haystack)) {
+        wine_type = 'white';
+      } else if (/sweet|dessert|sauternes|barsac|tokaj|vendange|passito|recioto|eiswein|ice.wine|late.harvest|auslese|beerenauslese|trockenbeerenauslese|moscato|muscat|vin.santo|malvasia|rutherglen/.test(haystack)) {
+        wine_type = 'sweet';
+      } else if (rawType === 'white') { wine_type = 'white'; }
+      else if (rawType === 'sweet') { wine_type = 'sweet'; }
+
+      return {
+        rank_label:      w.rank_label || RANK_LABELS[w.rank ? w.rank - 1 : i] || ('#' + (i + 1)),
+        wine_type,
+        vintage:         w.vintage || w.year || '',
+        producer:        w.producer || w.winery || w.chateau || '',
+        wine_name:       w.wine_name || w.wine || w.name || w.cuvee || '',
+        appellation:     w.appellation || w.region || w.designation || '',
+        varietal:        w.varietal || w.grape || w.grape_variety || w.variety || '',
+        scores:          w.scores || w.score || w.ratings || '',
+        bottles:         w.bottles || w.bottle_count || w.quantity || '',
+        drinking_window: w.drinking_window || w.window || w.drink_by || '',
+        price:           w.price || w.list_price || '',
+        pairing_note:    w.pairing_note || w.pairing || w.notes || w.note || '',
+      };
+    });
+
+    if (!wines.length) throw new Error('Empty wines array');
+
+    // Render considerations box
+    const steps = (parsed && Array.isArray(parsed.considerations) && parsed.considerations.length)
+      ? parsed.considerations
+      : (mode === 'cellar'
+          ? ['Pairing quality across all dishes', 'Urgency to drink (closest to end of window)', 'Most bottles remaining (favour more over fewer)']
+          : mode === 'restaurant'
+          ? ['Pairing quality across all dishes', 'Value for money', 'Price (lowest to highest as tiebreaker)']
+          : ['Pairing quality across all dishes']);
+    if (steps.length) {
+      const box = considerationsBox;
+      const stepsHtml = steps.map((s, i) => {
+        const arrow = i < steps.length - 1 ? '<span class="consideration-arrow">›</span>' : '';
+        return `<div class="consideration-step">
+          <div class="consideration-num">${i + 1}</div>
+          <span class="consideration-text">${esc(s)}</span>
+        </div>${arrow}`;
+      }).join('');
+      box.innerHTML = `<div class="considerations-label">Ranked by</div><div class="considerations-list">${stepsHtml}</div>`;
+      box.style.display = 'block';
+    }
+
+  } catch (e) {
+    body.innerHTML = `
+      <p style="color:var(--claret);font-size:0.82rem;margin-bottom:12px;">
+        Could not parse the sommelier's response. Raw output:
+      </p>
+      <div class="result-content" style="font-size:0.8rem;background:rgba(0,0,0,0.03);padding:12px;border-radius:4px;white-space:pre-wrap;">${esc(text)}</div>`;
+    return;
+  }
+
+  let html = '';
+  wines.forEach(w => {
+    // Line 1: vintage + producer + wine name (skip blanks and placeholders)
+    const nameParts = [clean(w.vintage), clean(w.producer), clean(w.wine_name)].filter(Boolean);
+    const fullName = nameParts.join(' ');
+
+    // Line 2: appellation · varietal · scores
+    const metaParts = [clean(w.appellation), clean(w.varietal), clean(w.scores)].filter(Boolean);
+    const meta = metaParts.join(' · ');
+
+    // Line 3: bottles + window (cellar), price (restaurant), or omitted (manual)
+    // Format: "2 bottles · Window: 2026–2035" or "SGD 120"
+    let inventoryHtml = '';
+    const bottles = clean(w.bottles);
+    const window_ = clean(w.drinking_window);
+    const price   = clean(w.price);
+
+    if (bottles || window_) {
+      const parts = [];
+      if (bottles) parts.push(`<span class="inv-bottles">${bottles} bottle${bottles === '1' ? '' : 's'}</span>`);
+      if (window_) parts.push(`<span class="inv-window">Window: ${window_}</span>`);
+      inventoryHtml = `<div class="wine-inventory">${parts.join('<span class="inv-sep"> · </span>')}</div>`;
+    } else if (price) {
+      inventoryHtml = `<div class="wine-price">${price}</div>`;
+    }
+
+    // Escape all API-sourced strings before injecting into innerHTML (OWASP A03)
+    const safeType     = esc(['red','white','sweet'].includes(w.wine_type) ? w.wine_type : 'red');
+    const safeRank     = esc(clean(w.rank_label));
+    const safeName     = esc(fullName || clean(w.wine_name) || 'Wine');
+    const safeMeta     = esc(meta);
+    const safeNote     = esc(clean(w.pairing_note) || w.pairing_note || '');
+    // Escape inventory parts individually (already assembled into HTML tags above)
+    // Re-assemble with escaped values
+    let safeInventory = '';
+    if (bottles || window_) {
+      const safeParts = [];
+      if (bottles) safeParts.push(`<span class="inv-bottles">${esc(bottles)} bottle${bottles === '1' ? '' : 's'}</span>`);
+      if (window_) safeParts.push(`<span class="inv-window">Window: ${esc(window_)}</span>`);
+      safeInventory = `<div class="wine-inventory">${safeParts.join('<span class="inv-sep"> · </span>')}</div>`;
+    } else if (price) {
+      safeInventory = `<div class="wine-price">${esc(price)}</div>`;
+    }
+
+    html += `
+    <div class="wine-card" data-wine-type="${safeType}">
+      <div class="wine-rank">${safeRank}</div>
+      <div class="wine-name">${safeName}</div>
+      ${safeMeta ? `<div class="wine-meta">${safeMeta}</div>` : ''}
+      ${safeInventory}
+      ${safeNote ? `<div class="wine-pairing-note">${safeNote}</div>` : ''}
+    </div>`;
+  });
+
+  body.innerHTML = html;
+
+  // Reset active filter to All, do single-pass count + render
+  (DOM.filterBtns || document.querySelectorAll('.filter-btn')).forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.filter === 'all');
+  });
+  applyWineFilter('all', true);
+}
+
+// Single-pass filter: count types, show/hide cards, update button labels
+const FILTER_LABELS = { all: 'All', red: 'Red', white: 'White', sweet: 'Sweet' };
+
+function applyWineFilter(filter, updateCounts) {
+  const body = DOM.resultsBody || document.getElementById('results-body');
+  const cards = body.querySelectorAll('.wine-card');
+  const counts = { all: 0, red: 0, white: 0, sweet: 0 };
+  let visible = 0;
+
+  cards.forEach(card => {
+    const t = card.dataset.wineType;
+    counts.all++;
+    if (t in counts) counts[t]++;
+    const match = filter === 'all' || t === filter;
+    card.classList.toggle('hidden', !match);
+    if (match) visible++;
+  });
+
+  if (updateCounts) {
+    (DOM.filterBtns || document.querySelectorAll('.filter-btn')).forEach(btn => {
+      const f = btn.dataset.filter;
+      btn.textContent = `${FILTER_LABELS[f]} (${counts[f] || 0})`;
+      btn.style.display = (f !== 'all' && (counts[f] || 0) === 0) ? 'none' : '';
+    });
+  }
+
+  const existing = document.getElementById('no-filter-msg');
+  if (existing) existing.remove();
+  if (visible === 0) {
+    const msg = document.createElement('div');
+    msg.id = 'no-filter-msg';
+    msg.className = 'no-filter-match';
+    msg.textContent = `No ${filter} wines in this shortlist.`;
+    body.appendChild(msg);
+  }
+}
+
+// Filter button clicks — event delegation on document
+document.addEventListener('click', e => {
+  const btn = e.target.closest('.filter-btn');
+  if (!btn) return;
+  (DOM.filterBtns || document.querySelectorAll('.filter-btn')).forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  applyWineFilter(btn.dataset.filter, false);
+});
+
+// ─── Main pairing call ────────────────────────────────────────
+document.getElementById('pair-btn').addEventListener('click', async () => {
+  const dishes = state.dishes.filter(d => d.trim());
+  if (dishes.length === 0) { showError('Please enter at least one dish.'); return; }
+
+  const tab = state.activeTab;
+  if (tab === 'restaurant' && state.restaurantFiles.length === 0) { showError('Please upload at least one photo of the wine list.'); return; }
+  if (tab === 'cellar' && !state.cellarFile) { showError('Please upload your cellar PDF.'); return; }
+  if (tab === 'manual' && state.manualWines.filter(w => w.trim()).length === 0) { showError('Please enter at least one wine.'); return; }
+
+  // Build prompt
+  const dishList = dishes.map((d,i) => `${i+1}. ${sanitisePromptInput(d)}`).join('\n');
+
+  let systemPrompt, userPrompt;
+
+  if (tab === 'restaurant') {
+    systemPrompt = `You are an expert sommelier with deep knowledge of wine and food pairing.
+You will be given one or more photos of a restaurant wine list and a dinner menu.
+
+Read every wine from the photos. Then identify the top 5 wines that best pair with ALL dishes collectively, prioritising value for money. Rank by pairing quality first, then price lowest to highest as a tiebreaker. Include a mix of red, white and sweet wines where the list allows.
+
+IMPORTANT: Output a single valid JSON object only. No prose, no headings, no markdown fences, no text before or after the JSON. Use this exact schema:
+{"wines":[{"rank_label":"Best pick","wine_type":"red","vintage":"","producer":"","wine_name":"","appellation":"","varietal":"","scores":"","price":"","pairing_note":""}],"considerations":["..."]}
+rank_label: "Best pick","2nd pick"…"5th pick". wine_type: "red"|"white"|"sweet". Include price. Omit scores if unknown. No bottles/drinking_window. considerations = ranking criteria in priority order.`;
+
+    userPrompt = `Here is tonight's menu:\n${dishList}\n\nWine list photos attached. Output JSON only — no other text.`;
+
+  } else if (tab === 'cellar') {
+    const isCasual = document.getElementById('casual-meal-check')?.checked || false;
+    const criteriaBlock = isCasual
+      ? `Select wines that best satisfy ALL FOUR criteria in this priority order:
+1) Best pairing with all the dishes collectively
+2) Most urgent to drink (closest to end of drinking window)
+3) Practical everyday choice — prefer approachable, easy-drinking styles over complex or prestigious bottles requiring ceremony
+4) Most bottles remaining — favour wines with more bottles over fewer`
+      : `Select wines that best satisfy ALL THREE criteria in this priority order:
+1) Best pairing with all the dishes collectively
+2) Most urgent to drink (closest to end of drinking window)
+3) Most bottles remaining — favour wines with more bottles over fewer`;
+
+    systemPrompt = `You are an expert sommelier with deep knowledge of wine and food pairing.
+You will be given a PDF cellar inventory and a dinner menu.
+Bottle counts appear after "=" signs in the inventory (e.g. "Chateau X 2015 = 3" means 3 bottles).
+
+${criteriaBlock}
+
+The host will open only ONE bottle. Recommend your top 7 picks in ranked order. Include a mix of red, white and sweet wines where the inventory allows.
+
+IMPORTANT: Your entire response must be a single valid JSON object. No text before or after it. No markdown fences. Follow this exact schema:
+{"wines":[{"rank_label":"Best pick","wine_type":"red","vintage":"","producer":"","wine_name":"","appellation":"","varietal":"","scores":"","bottles":"","drinking_window":"","pairing_note":""}],"considerations":["..."]}
+rank_label: "Best pick","2nd pick"…"7th pick". wine_type: "red"|"white"|"sweet". Include bottles+drinking_window when available. Omit scores/price. considerations = ranking criteria in priority order.`;
+
+    userPrompt = `Here is tonight's menu:\n${dishList}\n\nMy cellar inventory is in the attached PDF. Respond with JSON only — no other text.`;
+
+  } else {
+    systemPrompt = `You are an expert sommelier with deep knowledge of wine and food pairing.
+You will be given a list of wines and a dinner menu.
+Rank all provided wines by how well they pair with ALL the dishes collectively, from best to worst.
+
+IMPORTANT: Your entire response must be a single valid JSON object. No text before or after it. No markdown fences. Follow this exact schema:
+{"wines":[{"rank_label":"Best pick","wine_type":"red","vintage":"","producer":"","wine_name":"","appellation":"","varietal":"","scores":"","drinking_window":"","pairing_note":""}],"considerations":["..."]}
+rank_label: "Best pick","2nd pick"…"5th pick". wine_type: "red"|"white"|"sweet". Omit scores/drinking_window if unknown. No bottles/price. considerations = ranking criteria in priority order.`;
+
+    const wineList = state.manualWines.filter(w => w.trim()).map((w,i) => `${i+1}. ${sanitisePromptInput(w)}`).join('\n');
+    userPrompt = `Here is tonight's menu:\n${dishList}\n\nHere are the wines to rank:\n${wineList}\n\nRespond with JSON only — no other text.`;
+  }
+
+  // Build messages
+  const content = [];
+
+  // Show loading before potentially slow file processing
+  (DOM.mainForm || document.getElementById('main-form')).style.display = 'none';
+  (DOM.loading || document.getElementById('loading')).classList.add('visible');
+
+  // Attach files
+  try {
+    if (tab === 'restaurant') {
+      const loadingText = document.getElementById('loading-text');
+      if (loadingText) loadingText.textContent = `Preparing ${state.restaurantFiles.length} photo${state.restaurantFiles.length > 1 ? 's' : ''}…`;
+      // Compress and encode all images in parallel
+      const prepared = await Promise.all(state.restaurantFiles.map(async file => {
+        const compressed = await compressImage(file);
+        const b64 = await toBase64(compressed);
+        const mt = (compressed !== file) ? 'image/jpeg' : getMediaType(file);
+        return { type: 'image', source: { type: 'base64', media_type: mt, data: b64 } };
+      }));
+      prepared.forEach(img => content.push(img));
+      if (loadingText) loadingText.textContent = 'Consulting the cellar…';
+    } else if (tab === 'cellar' && state.cellarFile) {
+      const b64 = await toBase64(state.cellarFile);
+      if (!b64 || b64.length < 100) {
+        throw new Error(`PDF read returned empty data (${b64 ? b64.length : 0} bytes). Try re-selecting the file.`);
+      }
+      // The Anthropic API requires PDFs as documents with source type base64
+      content.push({
+        type: 'document',
+        source: { type: 'base64', media_type: 'application/pdf', data: b64 }
+      });
+    }
+  } catch (e) {
+    (DOM.loading || document.getElementById('loading')).classList.remove('visible');
+    (DOM.mainForm || document.getElementById('main-form')).style.display = 'block';
+    showError('Failed to prepare image: ' + (e.message || 'unknown error') + '. Try a different photo format.');
+    return;
+  }
+
+  content.push({ type: 'text', text: userPrompt });
+
+  try {
+    const resp = await fetch('https://sommelier-proxy.kendrickleesg.workers.dev', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'claude-haiku-4-5-20251001',
+        max_tokens: tab === 'cellar' ? 4096 : 2048,
+        system: systemPrompt,
+        messages: [{ role: 'user', content }],
+      }),
+    });
+
+    const data = await resp.json();
+    if (!resp.ok) throw new Error(data.error?.message || `API error ${resp.status}`);
+
+    // Diagnose stop reason — model may have stopped early or been filtered
+    const stopReason = data.stop_reason || 'unknown';
+    if (stopReason === 'max_tokens') {
+      throw new Error('Response was cut off (max tokens reached). Try fewer dishes or wines.');
+    }
+
+    // Extract all text blocks safely
+    const blocks = Array.isArray(data.content) ? data.content : [];
+    const text = blocks.filter(b => b.type === 'text').map(b => b.text).join('\n').trim();
+
+    if (!text) {
+      // Surface the full raw API response so we can see what happened
+      const raw = JSON.stringify(data, null, 2);
+      throw new Error('Empty response from API. Full response: ' + raw);
+    }
+
+    (DOM.loading || document.getElementById('loading')).classList.remove('visible');
+    (DOM.results || document.getElementById('results')).classList.add('visible');
+    renderResults(text, tab);
+
+  } catch (err) {
+    (DOM.loading || document.getElementById('loading')).classList.remove('visible');
+    (DOM.mainForm || document.getElementById('main-form')).style.display = 'block';
+    showError('Something went wrong: ' + err.message);
+  }
+});
+
+// ─── Reset ────────────────────────────────────────────────────
+document.getElementById('reset-btn').addEventListener('click', () => {
+  (DOM.results || document.getElementById('results')).classList.remove('visible');
+  (DOM.mainForm || document.getElementById('main-form')).style.display = 'block';
+  document.getElementById('results-body').innerHTML = '';
+});
+
+// ─── Init ─────────────────────────────────────────────────────
+
+renderDishes();
+renderWineInputs();
+
+// Show restored notice if a previous menu was found
+(function() {
+  const hasSaved = state.dishes.some(d => d.trim());
+  if (hasSaved) {
+    const notice = document.createElement('div');
+    notice.style.cssText = 'text-align:center;font-size:0.72rem;color:var(--gold);letter-spacing:0.12em;text-transform:uppercase;margin-top:-8px;margin-bottom:8px;font-style:italic;';
+    notice.textContent = '✦ Last menu restored';
+    const grid = document.getElementById('dishes-grid');
+    grid.parentNode.insertBefore(notice, grid.nextSibling);
+    setTimeout(() => { notice.style.transition = 'opacity 1s'; notice.style.opacity = '0'; setTimeout(() => notice.remove(), 1000); }, 3000);
+  }
+})();
+</script>
+</body>
+</html>
